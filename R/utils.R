@@ -146,6 +146,7 @@ Linter <- function(fun, name = linter_auto_name(), linter_level = c(NA_character
   class(fun) <- c("linter", "function")
   attr(fun, "name") <- name
   attr(fun, "linter_level") <- linter_level
+  attr(fun, "call_") <- attr(fun, "call_") %||% match_lint_call()
   fun
 }
 
@@ -266,4 +267,31 @@ check_dots <- function(dot_names, ref_calls, ref_help = as.character(sys.call(-1
 
 cli_abort_internal <- function(...) {
   cli_abort(..., .internal = TRUE) # nocov
+}
+
+# Based on https://stackoverflow.com/a/43329945 but with too many hacks at the moment
+match_lint_call <- function(where = 2) {
+  pf <- parent.frame(where)
+  pf1 <- parent.frame(where - 1)
+
+  call <- tryCatch(
+    evalq(match.call(expand.dots = TRUE), pf),
+    error = function(e) evalq(match.call(expand.dots = TRUE), pf1)
+  )
+
+  if (call[[1L]] == as.name("match.call")) {
+    where <- where - 1
+    call <- evalq(match.call(expand.dots = TRUE), parent.frame(where))
+  }
+
+  if (call[[1L]] == as.name("Linter") || call[[1L]] == as.name("lintr::Linter")) {
+    return(call[[-1L]])
+  }
+
+  formals <- evalq(formals(), parent.frame(where))
+  diff <- setdiff(names(formals), names(call))
+  for(i in diff[diff != "..."]) {
+    call[i] <- formals[i]
+  }
+  match.call(sys.function(sys.parent(where)), call)
 }

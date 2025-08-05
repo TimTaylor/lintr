@@ -195,6 +195,7 @@ call_linter_factory <- function(linter_factory, linter_name, package) {
   )
   # Otherwise, all linters would be called "linter_factory".
   attr(linter, "name") <- linter_name
+  attr(linter, "call_")[[1L]] <- as.name(linter_name)
   linter
 }
 
