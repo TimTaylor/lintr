@@ -285,7 +285,16 @@ match_lint_call <- function(where = 2) {
   }
 
   if (call[[1L]] == as.name("Linter") || call[[1L]] == as.name("lintr::Linter")) {
-    return(call[[-1L]])
+    call <- call[[-1L]]
+    if(call[[1L]]==as.name("function")) {
+      return(call)
+    }
+    formals <- formals(deparse1(call[[1L]]), parent.frame(where))
+    diff <- setdiff(names(formals), names(call))
+    for(i in diff[diff != "..."]) {
+      call[i] <- formals[i]
+    }
+    return(match.call(match.fun(deparse1(call[[1L]])), call))
   }
 
   formals <- evalq(formals(), parent.frame(where))
