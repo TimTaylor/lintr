@@ -271,18 +271,15 @@ cli_abort_internal <- function(...) {
 
 # Based on https://stackoverflow.com/a/43329945 but with too many hacks at the moment
 match_lint_call <- function() {
-  where <- 2
-  pf2 <- parent.frame(where)
-  pf1 <- parent.frame(where - 1)
 
+  pf1 <- parent.frame(1)
   call <- tryCatch(
-    evalq(match.call(expand.dots = TRUE), pf2),
+    evalq(match.call(expand.dots = TRUE), parent.frame(2)),
     error = function(e) evalq(match.call(expand.dots = TRUE), pf1)
   )
 
   if (call[[1L]] == as.name("match.call")) {
-    where <- where - 1
-    call <- evalq(match.call(expand.dots = TRUE), parent.frame(where))
+    call <- evalq(match.call(expand.dots = TRUE), parent.frame(1))
   }
 
   if (call[[1L]] == as.name("Linter") || call[[1L]] == as.name("lintr::Linter")) {
@@ -291,7 +288,7 @@ match_lint_call <- function() {
       return(call)
     }
     call <- match.call(match.fun(deparse1(call[[1L]])), call)
-    formals <- formals(deparse1(call[[1L]]), parent.frame(where))
+    formals <- formals(deparse1(call[[1L]]), parent.frame(1))
     diff <- setdiff(names(formals), names(call))
     for(i in diff[diff != "..."]) {
        call[i] <- formals[i]
@@ -299,10 +296,10 @@ match_lint_call <- function() {
     return(match.call(match.fun(deparse1(call[[1L]])), call))
   }
 
-  formals <- evalq(formals(), parent.frame(where))
+  formals <- evalq(formals(), parent.frame(2))
   diff <- setdiff(names(formals), names(call))
   for(i in diff[diff != "..."]) {
     call[i] <- formals[i]
   }
-  match.call(sys.function(sys.parent(where)), call)
+  match.call(sys.function(sys.parent(2)), call)
 }
