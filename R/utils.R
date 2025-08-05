@@ -270,12 +270,13 @@ cli_abort_internal <- function(...) {
 }
 
 # Based on https://stackoverflow.com/a/43329945 but with too many hacks at the moment
-match_lint_call <- function(where = 2) {
-  pf <- parent.frame(where)
+match_lint_call <- function() {
+  where <- 2
+  pf2 <- parent.frame(where)
   pf1 <- parent.frame(where - 1)
 
   call <- tryCatch(
-    evalq(match.call(expand.dots = TRUE), pf),
+    evalq(match.call(expand.dots = TRUE), pf2),
     error = function(e) evalq(match.call(expand.dots = TRUE), pf1)
   )
 
@@ -289,10 +290,11 @@ match_lint_call <- function(where = 2) {
     if(call[[1L]]==as.name("function")) {
       return(call)
     }
+    call <- match.call(match.fun(deparse1(call[[1L]])), call)
     formals <- formals(deparse1(call[[1L]]), parent.frame(where))
     diff <- setdiff(names(formals), names(call))
     for(i in diff[diff != "..."]) {
-      call[i] <- formals[i]
+       call[i] <- formals[i]
     }
     return(match.call(match.fun(deparse1(call[[1L]])), call))
   }
